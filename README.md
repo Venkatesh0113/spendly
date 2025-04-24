@@ -42,8 +42,9 @@ git clone https://github.com/Venkatesh0113/spendly.git
 
 ## 📦 APK
 
-> Download APK from `app/build/outputs/apk/debug/app-debug.apk`  
-Or [check Releases](https://github.com/Venkatesh0113/spendly/releases) *(if published)*
+  
+👉 [Download APK](https://github.com/Venkatesh0113/spendly/releases/download/V1/Spendly.apk)
+
 
 ---
 
