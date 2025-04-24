@@ -1,0 +1,130 @@
+package com.venkatesh.spendly
+
+import android.app.Application
+import android.content.Context
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddExpenseScreen() {
+    val context = LocalContext.current
+    val expenseViewModel: ExpenseViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
+
+    var spendLimit by remember { mutableStateOf("") }
+    val sharedPref = context.getSharedPreferences("spendly_prefs", Context.MODE_PRIVATE)
+
+    var description by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    val categories = listOf("Food", "Travel", "Bills", "Entertainment", "Health", "Shopping", "Education", "Work", "Savings", "Other")
+    var selectedCategory by remember { mutableStateOf("Other") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Add Expense") })
+        },
+        content = { padding ->
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                // 🔹 Set Spend Limit UI
+                OutlinedTextField(
+                    value = spendLimit,
+                    onValueChange = { spendLimit = it },
+                    label = { Text("Set Spend Limit ($)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        val limitValue = spendLimit.toDoubleOrNull()
+                        if (limitValue != null) {
+                            sharedPref.edit().putFloat("limit", limitValue.toFloat()).apply()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Limit")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = { Text("Amount") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Select Category:", style = MaterialTheme.typography.labelLarge)
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    categories.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            rowItems.forEach { category ->
+                                Button(
+                                    onClick = { selectedCategory = category },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selectedCategory == category)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.secondaryContainer
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Text(category)
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        val amt = amount.toDoubleOrNull()
+                        if (description.isNotBlank() && amt != null) {
+                            expenseViewModel.addExpense(description, amt, selectedCategory)
+                            description = ""
+                            amount = ""
+                            selectedCategory = "Other"
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Expense")
+                }
+            }
+        }
+    )
+}
