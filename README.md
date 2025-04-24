@@ -50,9 +50,9 @@ git clone https://github.com/Venkatesh0113/spendly.git
 
 ## 🧑‍🤝‍🧑 Team Members
 
-- **Harshitha Reddy Mannemala** – Team Lead  
-- **Venkatesh Gunukula** – Developer  
-- **Priyanka Padala** – Contributor  
+- **Venkatesh Gunukula**   
+- **Harshitha Reddy Mannemala**   
+- **Priyanka Padala**  
 
 ---
 
@@ -83,4 +83,3 @@ Copyright (c) 2025 Venkatesh Gunukula
 
 ---
 
-✨ Feel free to fork, contribute, or customize this app!
