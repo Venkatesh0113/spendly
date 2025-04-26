@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.shadow
@@ -26,6 +27,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,7 +47,6 @@ fun HomeScreen(navController: NavController) {
     val totalSpent = expenses.sumOf { it.amount }
     val totalEntries = expenses.size
 
-    // 🔔 Spend Limit Logic
     val sharedPref = context.getSharedPreferences("spendly_prefs", Context.MODE_PRIVATE)
     val limit = sharedPref.getFloat("limit", Float.MAX_VALUE)
 
@@ -64,6 +65,14 @@ fun HomeScreen(navController: NavController) {
             SortOption.OLDEST -> expenses.sortedBy { it.timestamp }
             SortOption.AMOUNT_DESC -> expenses.sortedByDescending { it.amount }
         }
+    }
+
+    // 🌟 Add this
+    var showWelcome by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(5000) // Wait 5 seconds
+        showWelcome = false
     }
 
     Scaffold(
@@ -100,21 +109,47 @@ fun HomeScreen(navController: NavController) {
             }
         },
         content = { innerPadding ->
-            if (sortedExpenses.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No expenses yet. Tap + to add!", style = MaterialTheme.typography.bodyLarge)
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .padding(16.dp)
+            ) {
+                if (showWelcome) {
+                    item {
+                        Text(
+                            text = "Welcome to Spendly",
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = "Smart Expense Tracker",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 24.dp),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(16.dp)
-                ) {
+
+                if (sortedExpenses.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No expenses yet. Tap + to add!", style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                } else {
                     item {
                         Card(
                             modifier = Modifier
