@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object AddExpense : Screen("add_expense")
+    object SetLimit : Screen("set_limit")
 }
 
 @Composable
@@ -19,8 +20,10 @@ fun SpendlyNavigation() {
             HomeScreen(navController)
         }
         composable(Screen.AddExpense.route) {
-            AddExpenseScreen()
+            AddExpenseScreen(navController)
+        }
+        composable(Screen.SetLimit.route) {
+            SetLimitScreen(navController)
         }
     }
 }
-

@@ -1,13 +1,11 @@
 package com.venkatesh.spendly
 
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpendlyApp() {
     val navController = rememberNavController()
@@ -15,8 +13,11 @@ fun SpendlyApp() {
         composable("home") {
             HomeScreen(navController)
         }
-        composable("add") {
-            AddExpenseScreen()
+        composable("add_expense") {
+            AddExpenseScreen(navController)
+        }
+        composable("set_limit") {
+            SetLimitScreen(navController)
         }
     }
 }
@@ -26,4 +27,3 @@ fun SpendlyApp() {
 fun SpendlyAppPreview() {
     SpendlyApp()
 }
-

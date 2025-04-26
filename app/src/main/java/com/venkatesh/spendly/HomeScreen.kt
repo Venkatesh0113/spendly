@@ -1,10 +1,7 @@
 package com.venkatesh.spendly
 
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,11 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.shadow
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.venkatesh.spendly.ui.theme.LightGrayBackground
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -34,6 +29,7 @@ import java.util.*
 enum class SortOption {
     LATEST,
     AMOUNT_DESC,
+    AMOUNT_ASC,  // 🔥 Added Low to High
     OLDEST
 }
 
@@ -48,13 +44,7 @@ fun HomeScreen(navController: NavController) {
     val totalEntries = expenses.size
 
     val sharedPref = context.getSharedPreferences("spendly_prefs", Context.MODE_PRIVATE)
-    val limit = sharedPref.getFloat("limit", Float.MAX_VALUE)
-
-    LaunchedEffect(totalSpent) {
-        if (totalSpent > limit) {
-            sendLimitNotification(context, totalSpent)
-        }
-    }
+    val limit = sharedPref.getFloat("limit", -1f)
 
     var sortOption by remember { mutableStateOf(SortOption.LATEST) }
     var expanded by remember { mutableStateOf(false) }
@@ -64,14 +54,14 @@ fun HomeScreen(navController: NavController) {
             SortOption.LATEST -> expenses.sortedByDescending { it.timestamp }
             SortOption.OLDEST -> expenses.sortedBy { it.timestamp }
             SortOption.AMOUNT_DESC -> expenses.sortedByDescending { it.amount }
+            SortOption.AMOUNT_ASC -> expenses.sortedBy { it.amount }
         }
     }
 
-    // 🌟 Add this
     var showWelcome by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        delay(5000) // Wait 5 seconds
+        delay(5000)
         showWelcome = false
     }
 
@@ -94,6 +84,10 @@ fun HomeScreen(navController: NavController) {
                                 sortOption = SortOption.AMOUNT_DESC
                                 expanded = false
                             })
+                            DropdownMenuItem(text = { Text("Amount: Low to High") }, onClick = {
+                                sortOption = SortOption.AMOUNT_ASC
+                                expanded = false
+                            })
                             DropdownMenuItem(text = { Text("Oldest First") }, onClick = {
                                 sortOption = SortOption.OLDEST
                                 expanded = false
@@ -104,7 +98,10 @@ fun HomeScreen(navController: NavController) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("add") }) {
+            FloatingActionButton(
+                onClick = { navController.navigate("add_expense") },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         },
@@ -139,6 +136,58 @@ fun HomeScreen(navController: NavController) {
                     }
                 }
 
+                item {
+                    Button(
+                        onClick = { navController.navigate("set_limit") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Set Spending Limit")
+                    }
+                }
+
+                item {
+                    if (limit == -1f) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = LightGrayBackground
+                            )
+                        ) {
+                            Text(
+                                "No Spending Limit Set",
+                                modifier = Modifier.padding(16.dp),
+                                color = Color.Black,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = LightGrayBackground
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    "Current Spending Limit: $${String.format("%.2f", limit)}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (sortedExpenses.isEmpty()) {
                     item {
                         Box(
@@ -150,26 +199,6 @@ fun HomeScreen(navController: NavController) {
                         }
                     }
                 } else {
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    "Total Spent: $${String.format("%.2f", totalSpent)}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                )
-                                Text("Transactions: $totalEntries")
-                            }
-                        }
-                    }
-
                     items(sortedExpenses) { expense ->
                         val date = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                             .format(Date(expense.timestamp))
@@ -177,8 +206,7 @@ fun HomeScreen(navController: NavController) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp)
-                                .shadow(2.dp, shape = MaterialTheme.shapes.medium),
+                                .padding(vertical = 6.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             )
@@ -228,28 +256,4 @@ fun HomeScreen(navController: NavController) {
             }
         }
     )
-}
-
-fun sendLimitNotification(context: Context, amount: Double) {
-    val channelId = "spendly_channel"
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = NotificationChannel(
-            channelId,
-            "Spendly Alerts",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Alerts when spending limit is crossed"
-        }
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    val builder = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setContentTitle("💸 Limit Exceeded!")
-        .setContentText("You’ve spent $${String.format("%.2f", amount)} — over your limit!")
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-
-    NotificationManagerCompat.from(context).notify(101, builder.build())
 }
